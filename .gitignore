@@ -1,0 +1,6 @@
+# Live data — never commit
+database/*.db
+database/*.db.*
+database/*.backup*
+error_log
+*.log
