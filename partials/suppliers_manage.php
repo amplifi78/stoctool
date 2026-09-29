@@ -1,8 +1,13 @@
 <?php
 include '../includes/db.php';
 $suppliers = $db->query("SELECT * FROM suppliers ORDER BY name")->fetchAll();
-$edit_id = $_GET['edit_id'] ?? 0;
-$edit_s = $edit_id ? $db->query("SELECT * FROM suppliers WHERE id = $edit_id")->fetch() : null;
+$edit_id = (int)($_GET['edit_id'] ?? 0);
+$edit_s = null;
+if ($edit_id) {
+    $stmt = $db->prepare("SELECT * FROM suppliers WHERE id = ?");
+    $stmt->execute([$edit_id]);
+    $edit_s = $stmt->fetch();
+}
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Supplier Management</h3>
@@ -57,14 +62,10 @@ $edit_s = $edit_id ? $db->query("SELECT * FROM suppliers WHERE id = $edit_id")->
             <td><?= htmlspecialchars($s['phone']) ?></td>
             <td>
                 <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-outline-primary" onclick="loadPartial('suppliers_manage', {edit_id: <?= $s['id'] ?>})">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(<?= $s['id'] ?>, '<?= addslashes(htmlspecialchars($s['name'])) ?>', 'supplier')">Delete</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadPartial('suppliers_manage', {edit_id: <?= (int)$s['id'] ?>})">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(this)" data-id="<?= (int)$s['id'] ?>" data-name="<?= htmlspecialchars($s['name']) ?>" data-type="supplier">Delete</button>
                 </div>
             </td>
         </tr><?php endforeach; ?>
     </tbody>
 </table>
-
-<script>
-// Scripts moved to js/app.js
-</script>

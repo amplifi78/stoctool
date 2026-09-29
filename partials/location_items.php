@@ -1,8 +1,12 @@
 <?php
 include '../includes/db.php';
-$loc_id = $_GET['id'] ?? 0;
-$loc = $db->query("SELECT * FROM locations WHERE id = $loc_id")->fetch();
-$items = $db->query("SELECT i.*, ig.min_required, ig.id as group_id FROM items i JOIN item_groups ig ON i.id = ig.item_id WHERE ig.location_id = $loc_id")->fetchAll();
+$loc_id = (int)($_GET['id'] ?? 0);
+$stmt = $db->prepare("SELECT * FROM locations WHERE id = ?");
+$stmt->execute([$loc_id]);
+$loc = $stmt->fetch();
+$stmt = $db->prepare("SELECT i.*, ig.min_required, ig.id as group_id FROM items i JOIN item_groups ig ON i.id = ig.item_id WHERE ig.location_id = ? ORDER BY i.name");
+$stmt->execute([$loc_id]);
+$items = $stmt->fetchAll();
 $all_items = $db->query("SELECT * FROM items ORDER BY name")->fetchAll();
 ?>
 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -28,11 +32,17 @@ $all_items = $db->query("SELECT * FROM items ORDER BY name")->fetchAll();
                 <?php foreach($items as $i): ?>
                 <tr>
                     <td class="align-middle"><?= htmlspecialchars($i['name']) ?></td>
-                    <td><input type="number" id="min-<?= $i['group_id'] ?>" class="form-control form-control-sm" value="<?= $i['min_required'] ?>"></td>
+                    <td><input type="number" id="min-<?= (int)$i['group_id'] ?>" class="form-control form-control-sm" value="<?= (int)$i['min_required'] ?>"></td>
                     <td>
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="updateMin(<?= $i['group_id'] ?>)">Save</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteGroup(<?= $i['group_id'] ?>, '<?= addslashes(htmlspecialchars($i['name'])) ?>', '<?= addslashes(htmlspecialchars($loc['location'])) ?>', '<?= addslashes(htmlspecialchars($loc['building'] . ' ' . $loc['site'])) ?>', <?= $loc_id ?>)">Delete</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="updateMin(<?= (int)$i['group_id'] ?>)">Save</button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    onclick="confirmDeleteGroup(this)"
+                                    data-group-id="<?= (int)$i['group_id'] ?>"
+                                    data-item-name="<?= htmlspecialchars($i['name']) ?>"
+                                    data-loc-name="<?= htmlspecialchars($loc['location']) ?>"
+                                    data-loc-details="<?= htmlspecialchars($loc['building'] . ' ' . $loc['site']) ?>"
+                                    data-loc-id="<?= $loc_id ?>">Delete</button>
                         </div>
                     </td>
                 </tr>
@@ -51,7 +61,7 @@ $all_items = $db->query("SELECT * FROM items ORDER BY name")->fetchAll();
                 <select name="item_id" class="form-select" required>
                     <option value="">Select Item...</option>
                     <?php foreach($all_items as $ai): ?>
-                    <option value="<?= $ai['id'] ?>"><?= htmlspecialchars($ai['name']) ?></option>
+                    <option value="<?= (int)$ai['id'] ?>"><?= htmlspecialchars($ai['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
                 <input type="number" name="min_required" class="form-control" placeholder="Min" style="max-width:80px" required>
@@ -60,7 +70,3 @@ $all_items = $db->query("SELECT * FROM items ORDER BY name")->fetchAll();
         </form>
     </div>
 </div>
-
-<script>
-// Scripts moved to js/app.js
-</script>

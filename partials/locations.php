@@ -2,7 +2,7 @@
 include '../includes/db.php';
 
 $sort_col = $_SESSION['sort_col'] ?? 'l.site, l.building, l.location';
-$sort_dir = $_SESSION['sort_dir'] ?? 'ASC';
+$sort_dir = ($_SESSION['sort_dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
 
 $sort_map = [
     'location' => 'l.location',
@@ -53,9 +53,9 @@ sort($buildings);
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="pointer" onclick="sortLocations('location')">Location <?= $sort_col == 'location' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-                    <th class="pointer" onclick="sortLocations('last_check')">Last Checked <?= $sort_col == 'last_check' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-                    <th class="pointer text-center" onclick="sortLocations('items')">Items <?= $sort_col == 'items' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
+                    <th class="pointer" onclick="sortLocations('location')">Location <?= $sort_col == 'location' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+                    <th class="pointer" onclick="sortLocations('last_check')">Last Checked <?= $sort_col == 'last_check' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+                    <th class="pointer text-center" onclick="sortLocations('items')">Items <?= $sort_col == 'items' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -70,7 +70,7 @@ sort($buildings);
                             <span class="fs-5 fw-bold"><?= htmlspecialchars($l['location']) ?></span>
                             <a href="javascript:void(0)" class="ms-1 text-muted" 
                                onclick="showLocationModal(this)"
-                               data-id="<?= $l['id'] ?>"
+                               data-id="<?= (int)$l['id'] ?>"
                                data-location="<?= htmlspecialchars($l['location']) ?>"
                                data-building="<?= htmlspecialchars($l['building']) ?>"
                                data-site="<?= htmlspecialchars($l['site']) ?>">
@@ -86,21 +86,20 @@ sort($buildings);
                     </td>
                     <td>
                         <span class="small text-muted">
-                            <?= $l['last_check'] ? date('j M Y, g:ia', strtotime($l['last_check'])) : 'Never' ?>
+                            <?= local_time($l['last_check']) ?>
                         </span>
                     </td>
                     <td class="text-center">
-                        <a href="javascript:void(0)" class="badge bg-secondary text-decoration-none" onclick="loadPartial('location_items', {id: <?= $l['id'] ?>})">
-                            <?= $l['item_count'] ?> items
+                        <a href="javascript:void(0)" class="badge bg-secondary text-decoration-none" onclick="loadPartial('location_items', {id: <?= (int)$l['id'] ?>})">
+                            <?= (int)$l['item_count'] ?> items
                         </a>
                     </td>
                     <td class="text-end">
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary" onclick="loadPartial('check_form', {id: <?= $l['id'] ?>})">
+                            <button class="btn btn-outline-primary" onclick="loadPartial('check_form', {id: <?= (int)$l['id'] ?>})">
                                 Do Stocktake
                             </button>
-                            <?php $loc_filter = $l['site'] . ' / ' . $l['location']; ?>
-                            <button class="btn btn-outline-secondary" onclick="loadPartial('inventory', {location_filter: '<?= addslashes($loc_filter) ?>'})">
+                            <button class="btn btn-outline-secondary" onclick="viewLocationReport(this)" data-loc-filter="<?= htmlspecialchars($l['site'] . ' / ' . $l['location']) ?>">
                                 View Report
                             </button>
                         </div>

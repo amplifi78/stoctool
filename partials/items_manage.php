@@ -3,8 +3,13 @@ include '../includes/db.php';
 $items = $db->query("SELECT i.*, s.name as s_name FROM items i LEFT JOIN suppliers s ON i.supplier_id = s.id ORDER BY i.name")->fetchAll();
 $suppliers = $db->query("SELECT * FROM suppliers ORDER BY name")->fetchAll();
 
-$edit_id = $_GET['edit_id'] ?? 0;
-$edit_i = $edit_id ? $db->query("SELECT * FROM items WHERE id = $edit_id")->fetch() : null;
+$edit_id = (int)($_GET['edit_id'] ?? 0);
+$edit_i = null;
+if ($edit_id) {
+    $stmt = $db->prepare("SELECT * FROM items WHERE id = ?");
+    $stmt->execute([$edit_id]);
+    $edit_i = $stmt->fetch();
+}
 ?>
 <h3>Global Item Management</h3>
 
@@ -20,7 +25,7 @@ $edit_i = $edit_id ? $db->query("SELECT * FROM items WHERE id = $edit_id")->fetc
                 <select name="supplier_id" class="form-select" required>
                     <option value="">Select Supplier...</option>
                     <?php foreach($suppliers as $s): ?>
-                    <option value="<?= $s['id'] ?>" <?= (isset($edit_i['supplier_id']) && $edit_i['supplier_id'] == $s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['name']) ?></option>
+                    <option value="<?= (int)$s['id'] ?>" <?= (isset($edit_i['supplier_id']) && $edit_i['supplier_id'] == $s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -52,19 +57,15 @@ $edit_i = $edit_id ? $db->query("SELECT * FROM items WHERE id = $edit_id")->fetc
         <?php foreach($items as $i): ?>
         <tr>
             <td><?= htmlspecialchars($i['name']) ?></td>
-            <td><?= htmlspecialchars($i['s_name']) ?></td>
+            <td><?= htmlspecialchars($i['s_name'] ?? '—') ?></td>
             <td><?= htmlspecialchars($i['code'] ?? '-') ?></td>
             <td>
                 <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-outline-primary" onclick="loadPartial('items_manage', {edit_id: <?= $i['id'] ?>})">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(<?= $i['id'] ?>, '<?= addslashes(htmlspecialchars($i['name'])) ?>', 'item')">Delete</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadPartial('items_manage', {edit_id: <?= (int)$i['id'] ?>})">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(this)" data-id="<?= (int)$i['id'] ?>" data-name="<?= htmlspecialchars($i['name']) ?>" data-type="item">Delete</button>
                 </div>
             </td>
         </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
-
-<script>
-// Scripts moved to js/app.js
-</script>

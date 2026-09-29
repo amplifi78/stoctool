@@ -2,7 +2,7 @@
 include '../includes/db.php';
 
 $sort_col = $_SESSION['sort_col'] ?? 'l.location';
-$sort_dir = $_SESSION['sort_dir'] ?? 'ASC';
+$sort_dir = ($_SESSION['sort_dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
 
 // Allow mapping simple names to DB columns
 $sort_map = [
@@ -34,7 +34,7 @@ $sql = "SELECT
         FROM item_groups ig
         JOIN items i ON ig.item_id = i.id
         JOIN locations l ON ig.location_id = l.id
-        JOIN suppliers s ON i.supplier_id = s.id
+        LEFT JOIN suppliers s ON i.supplier_id = s.id
         ORDER BY $order_by $sort_dir, i.name";
 
 $rows = $db->query($sql)->fetchAll();
@@ -67,22 +67,16 @@ $pre_filter_loc = $_GET['location_filter'] ?? '';
     </div>
 </div>
 
-<script>
-    if (document.getElementById('filter-location').value || document.getElementById('filter-status').value) {
-        filterInventory();
-    }
-</script>
-
 <table class="table table-hover mt-3" id="inventory-table">
     <thead>
         <tr>
-            <th class="pointer" onclick="sortInventory('location')">Location <?= $sort_col == 'location' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-            <th class="pointer" onclick="sortInventory('item')">Item <?= $sort_col == 'item' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-            <th class="pointer" onclick="sortInventory('checked')">Checked <?= $sort_col == 'checked' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-            <th class="pointer text-center" onclick="sortInventory('min')">Min <?= $sort_col == 'min' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-            <th class="pointer text-center" onclick="sortInventory('current')">Current <?= $sort_col == 'current' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-            <th class="pointer text-center" onclick="sortInventory('needed')">Need <?= $sort_col == 'needed' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
-            <th class="pointer" onclick="sortInventory('supplier')">Supplier <?= $sort_col == 'supplier' ? ($sort_dir == 'ASC' ? '↑' : '↓') : '' ?></th>
+            <th class="pointer" onclick="sortInventory('location')">Location <?= $sort_col == 'location' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+            <th class="pointer" onclick="sortInventory('item')">Item <?= $sort_col == 'item' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+            <th class="pointer" onclick="sortInventory('checked')">Checked <?= $sort_col == 'checked' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+            <th class="pointer text-center" onclick="sortInventory('min')">Min <?= $sort_col == 'min' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+            <th class="pointer text-center" onclick="sortInventory('current')">Current <?= $sort_col == 'current' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+            <th class="pointer text-center" onclick="sortInventory('needed')">Need <?= $sort_col == 'needed' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
+            <th class="pointer" onclick="sortInventory('supplier')">Supplier <?= $sort_col == 'supplier' ? ($sort_dir == 'ASC' ? '&uarr;' : '&darr;') : '' ?></th>
         </tr>
     </thead>
     <tbody>
@@ -95,17 +89,18 @@ $pre_filter_loc = $_GET['location_filter'] ?? '';
             elseif ($net < 0) { $status = 'overstocked'; $class = 'table-success'; }
             
             $loc_class = htmlspecialchars("{$r['site']} / {$r['location']}");
-            $loc_val = "<b>{$r['location']}</b> <small>{$r['building']}, {$r['site']}</small>";
-            $checked = $r['last_checked'] ? date('G:i d/m', strtotime($r['last_checked'])) : 'Never';
+            $loc_val = "<b>" . htmlspecialchars($r['location']) . "</b> <small>" . htmlspecialchars($r['building']) . ", " . htmlspecialchars($r['site']) . "</small>";
+            $checked = $r['last_checked'] ? local_time($r['last_checked'], 'G:i d/m') : 'Never';
         ?>
         <tr class="inventory-row <?= $class ?>" data-location="<?= $loc_class ?>" data-status="<?= $status ?>">
             <td><?= $loc_val ?></td>
             <td><?= htmlspecialchars($r['item_name']) ?></td>
             <td><small><?= $checked ?></small></td>
-            <td class="text-center"><?= $r['min_required'] ?></td>
-            <td class="text-center"><?= $current ?></td>
-            <td class="text-center"><b><?= $net ?></b></td>
+            <td class="text-center"><?= (int)$r['min_required'] ?></td>
+            <td class="text-center"><?= (int)$current ?></td>
+            <td class="text-center"><b><?= (int)$net ?></b></td>
             <td>
+                <?php if ($r['supplier_id']): ?>
                 <button class="btn btn-outline-primary btn-sm w-100" 
                         onclick="showSupplierModal(this)"
                         data-name="<?= htmlspecialchars($r['supplier_name']) ?>"
@@ -115,6 +110,9 @@ $pre_filter_loc = $_GET['location_filter'] ?? '';
                         data-notes="<?= htmlspecialchars($r['notes']) ?>">
                     <?= htmlspecialchars($r['supplier_name']) ?>
                 </button>
+                <?php else: ?>
+                <span class="text-muted small">No supplier</span>
+                <?php endif; ?>
             </td>
         </tr>
         <?php endforeach; ?>

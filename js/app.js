@@ -127,10 +127,11 @@ const showSupplierModal = (btn) => {
 let itemToDelete = null;
 let deleteType = null;
 
-const confirmDelete = (id, name, type) => {
-    itemToDelete = id;
-    deleteType = type;
-    document.getElementById('delete-item-name').innerText = name;
+const confirmDelete = (btn) => {
+    const data = btn.dataset;
+    itemToDelete = data.id;
+    deleteType = data.type;
+    document.getElementById('delete-item-name').innerText = data.name;
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 };
 
@@ -163,12 +164,17 @@ const doDelete = async () => {
 };
 
 let currentLocId = null;
-const confirmDeleteGroup = (groupId, itemName, locName, locDetails, locId) => {
-    itemToDelete = groupId;
+const confirmDeleteGroup = (btn) => {
+    const data = btn.dataset;
+    itemToDelete = data.groupId;
     deleteType = 'item_group';
-    currentLocId = locId;
-    document.getElementById('delete-item-name').innerText = `${itemName} from ${locName} (${locDetails})`;
+    currentLocId = data.locId;
+    document.getElementById('delete-item-name').innerText = `${data.itemName} from ${data.locName} (${data.locDetails})`;
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
+};
+
+const viewLocationReport = (btn) => {
+    loadPartial('inventory', { location_filter: btn.dataset.locFilter });
 };
 
 document.addEventListener('DOMContentLoaded', () => loadPartial('locations'));
