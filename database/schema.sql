@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS item_groups (
     item_id INTEGER,
     min_required INTEGER DEFAULT 0,
     FOREIGN KEY (location_id) REFERENCES locations(id),
-    FOREIGN KEY (item_id) REFERENCES items(id)
+    FOREIGN KEY (item_id) REFERENCES items(id),
+    UNIQUE (location_id, item_id)
 );
 
 CREATE TABLE IF NOT EXISTS stock_checks (

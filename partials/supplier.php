@@ -1,7 +1,13 @@
 <?php
 include '../includes/db.php';
-$id = $_GET['id'] ?? 0;
-$s = $db->query("SELECT * FROM suppliers WHERE id = $id")->fetch();
+$id = (int)($_GET['id'] ?? 0);
+$stmt = $db->prepare("SELECT * FROM suppliers WHERE id = ?");
+$stmt->execute([$id]);
+$s = $stmt->fetch();
+if (!$s) {
+    echo '<div class="alert alert-warning">Supplier not found.</div>';
+    return;
+}
 ?>
 <div class="card shadow">
     <div class="card-header bg-dark text-white d-flex justify-content-between">

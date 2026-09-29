@@ -1,8 +1,13 @@
 <?php
 include '../includes/db.php';
 $locations = $db->query("SELECT *, (SELECT COUNT(*) FROM item_groups WHERE location_id = locations.id) as item_count FROM locations ORDER BY site, building, location")->fetchAll();
-$edit_id = $_GET['edit_id'] ?? 0;
-$edit_l = $edit_id ? $db->query("SELECT * FROM locations WHERE id = $edit_id")->fetch() : null;
+$edit_id = (int)($_GET['edit_id'] ?? 0);
+$edit_l = null;
+if ($edit_id) {
+    $stmt = $db->prepare("SELECT * FROM locations WHERE id = ?");
+    $stmt->execute([$edit_id]);
+    $edit_l = $stmt->fetch();
+}
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Location Management</h3>
@@ -48,18 +53,14 @@ $edit_l = $edit_id ? $db->query("SELECT * FROM locations WHERE id = $edit_id")->
             <td><?= htmlspecialchars($l['site']) ?></td>
             <td><?= htmlspecialchars($l['building']) ?></td>
             <td><?= htmlspecialchars($l['location']) ?></td>
-            <td><a href="javascript:void(0)" onclick="loadPartial('location_items', {id: <?= $l['id'] ?>})"><?= $l['item_count'] ?></a></td>
+            <td><a href="javascript:void(0)" onclick="loadPartial('location_items', {id: <?= (int)$l['id'] ?>})"><?= (int)$l['item_count'] ?></a></td>
             <td>
                 <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-outline-primary" onclick="loadPartial('locations_manage', {edit_id: <?= $l['id'] ?>})">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(<?= $l['id'] ?>, '<?= addslashes(htmlspecialchars($l['location'])) ?>', 'location')">Delete</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadPartial('locations_manage', {edit_id: <?= (int)$l['id'] ?>})">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(this)" data-id="<?= (int)$l['id'] ?>" data-name="<?= htmlspecialchars($l['location']) ?>" data-type="location">Delete</button>
                 </div>
             </td>
         </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
-
-<script>
-// Scripts moved to js/app.js to fix ReferenceError
-</script>
