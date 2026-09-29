@@ -33,11 +33,13 @@ $db->beginTransaction();
 $n = $db->exec("DELETE FROM item_groups WHERE location_id NOT IN (SELECT id FROM locations) OR item_id NOT IN (SELECT id FROM items)");
 report('Orphaned item assignments', $n);
 
-// 2. Orphaned stock records / checks
-$n = $db->exec("DELETE FROM stock_records WHERE check_id NOT IN (SELECT id FROM stock_checks) OR item_id NOT IN (SELECT id FROM items)");
-report('Orphaned stock records', $n);
+// 2. Orphaned stock checks / records.
+// Checks first: dropping a check orphans its records, so records must be
+// swept afterwards or they survive the first run and fail foreign_key_check.
 $n = $db->exec("DELETE FROM stock_checks WHERE location_id NOT IN (SELECT id FROM locations)");
 report('Orphaned stock checks', $n);
+$n = $db->exec("DELETE FROM stock_records WHERE check_id NOT IN (SELECT id FROM stock_checks) OR item_id NOT IN (SELECT id FROM items)");
+report('Orphaned stock records', $n);
 
 // 3. Duplicate item_groups — keep the lowest id for each (location_id, item_id)
 $n = $db->exec("DELETE FROM item_groups WHERE id NOT IN (SELECT MIN(id) FROM item_groups GROUP BY location_id, item_id)");
